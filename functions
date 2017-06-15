@@ -1,0 +1,19 @@
+function log(){
+    local info_prefix="\e[32m[INFO]\e[0m: ";
+    local warn_prefix="\e[33m[WARN]\e[0m: ";
+    local error_prefix="\e[31m[ERROR]\e[0m: ";
+    local time=$(date +"%Y:%m:%d %X %z");
+
+    if [ "$1" == INFO ]; then
+       echo -e $info_prefix $2;
+       echo -e "["$time"] " $@ >>log.log;
+    elif [ "$1" == ERROR ]; then
+        echo -e $error_prefix $2;
+        echo -e "["$time"] " $@ >>log.log;
+    elif [ "$1" == WARN ]; then
+        echo -e $warn_prefix $2;
+        echo -e "["$time"] " $@ >>log.log;
+    else
+        echo -e "\n";
+    fi;
+}
