@@ -1,10 +1,12 @@
 #!/bin/bash
 . ./functions
+######
 #InfoBip interview test procedure. Prepared by Solovev Vitaly.
 ######
+
 clear;
 sleep 1;
-log INFO "Welcome to infoBip interview test procedure.";
+log INFO "Welcome to infoBip interview test procedure!";
 log INFO "Prepared by Solovev Vitaly.";
 log;
 ######
@@ -18,11 +20,12 @@ fi
 ######
 
 ######
-log INFO "Now we will start to configure internal network.";
+log INFO "Configure internal network.";
 ./CreateNetwork.sh;
-echo -e "\n* * *\n";
+log STARS;
 ######
 
+######
 #Check and create zookeeper node(s)
 ./CheckContainer.sh zookeeper create;
 if [ $? -eq 0 ]; then
@@ -32,7 +35,9 @@ fi;
 if [ $? -eq 1 ]; then
 	exit 1;
 fi;
-echo -e "\n* * *\n";
+log STARS;
+######
+
 #Check and create kafka node(s)
 ./CheckContainer.sh kafka create;
 if [ $? -eq 0 ]; then

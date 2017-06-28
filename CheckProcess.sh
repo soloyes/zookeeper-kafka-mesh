@@ -3,7 +3,7 @@
 #Check the process run. Start if needed.
 cat /var/run/docker.pid 1>/dev/null 2>/dev/null;
 if [ $? -ne 1 ]; then 
-	log WARN "Docker process is already has been ran with PID="$(cat /var/run/docker.pid);
+	log WARN "Docker process has been ran already with PID="$(cat /var/run/docker.pid);
 else
 	i=0;
 	while [ $i -ne "3" ]; do

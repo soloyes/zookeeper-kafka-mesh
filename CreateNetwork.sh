@@ -1,15 +1,18 @@
 #!/bin/bash
 . ./functions
-#Set network segment IP and network name
-#Network IP must be from the one of follow ranges:
+#Set network segment IP and network name. Net name can be any word.
+#Network IP must be from the one of follow private ranges. Regular expression is deal with it.
 #10.0.0.0/8
 #172.16.0.0/12
 #192.168.0.0/16
-#Below regular expression is for check it.
+
+######
 if [ -f NetName ]; then
 	log INFO "Network already existed, use $(cat NetName).";
 	exit 1;
 fi;
+######
+
 log WARN "Network IP must be from the one of follow ranges:\n10.0.0.0/8\n172.16.0.0/12\n192.168.0.0/16";
 while true; do
 	read -p "Input network IP = " IP;
@@ -20,14 +23,15 @@ while true; do
 	if [ $? -eq 0 ]; then
 		while true; do
 			read -p "Input network name = " NetName;
-			docker network create --subnet=10 $NetName 1>/dev/null;
+			docker network create --subnet=$IP $NetName 1>/dev/null;
 			if [ $? -eq 0 ]; then
 				echo $NetName > NetName;
-				echo "Network $NetName is created. IP range is $IP"; 
+				log INFO "Network $NetName is created. IP range is $IP";
 				exit 0;
 			else
-			    #If trouble with network creation here, 99% it means wrong network name, so program will be looped again.
-				log ERROR "Something wrong with network creation. Redo it again while success."
+			    #If trouble with network creation here, 99% it means wrong network name.
+			    #So program will be looped again.
+				log ERROR "Something wrong with network creation. Re-do it again while success."
 				break;
 			fi; 
 		done;

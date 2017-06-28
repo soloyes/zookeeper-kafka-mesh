@@ -8,11 +8,8 @@ Need to be sure docker command is not require "sudo".
 Make exec all files:
 	1) chmod +x infoBip/*.sh
 
-It operating with reconfigured images (improved by me): baseimage-zookeeper, baseimage-kafka. Both images has latest JRE+kafka/zookeeper software insight. Services are starting automatically when use init.sh.
-
-To import containers we need to pull them into docker library.
-	1) docker load < /infoBip/baseimage-zookeeper.tar
-	2) docker load < /infoBip/baseimage-kafka.tar
+It operating with images based on Dockerfile: baseimage-zookeeper, baseimage-kafka.
+Both images will install JRE+kafka/zookeeper software insight.
 
 Steps to use init.sh
 Script init.sh checking docker process status. Start it if needed. May need the password to input for process start.
@@ -20,7 +17,8 @@ Script init.sh is create new network (if u already have others, it is OK, networ
 
 Script assigns IP's automatically in sequence. Default GW is the first IP in the range (use by parent OS).
 
-Every container starts ssh daemon itself. So, after ever container created, we can connect it. Just use ./SetPass.sh to set root password as "root" (will set password to every created container, not do on other containers). Then u can connect every server by ssh to check something (e.g cat /etc/hosts, grep log, ps -ef). For more comfortable we can use public-key, (add pub.id to docker image, then save image)
+Every container starts ssh daemon itself. So, after ever container created, we can connect it.
+Just use ./SetPass.sh to set root user password as "root" (will set password to every created container, not do on other containers). Then u can connect every server by ssh to check something (e.g cat /etc/hosts, grep log, ps -ef). For more comfortable we can use public-key, (add pub.id to docker image, then save image)
 
 Use Clear.sh to delete all configuration. It is fast way to have a test from begin.
 

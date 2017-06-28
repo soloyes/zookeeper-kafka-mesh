@@ -12,7 +12,7 @@ if [ -e NetName ]; then
 	for i in ${NetNameContainers[@]}; do 
 		docker stop $i 1>/dev/null 2>/dev/null;
 	done;
-	docker network rm $(cat NetName);
+	docker network rm $(cat NetName) 1>/dev/null;
 	[ $? -eq 0 ]; rm NetName; [ $? -eq 0 ]; rm *IP; rm *myid;
 else
 	echo "There is no network, please create it using init.sh";

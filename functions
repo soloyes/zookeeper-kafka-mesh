@@ -13,7 +13,23 @@ function log(){
     elif [ "$1" == WARN ]; then
         echo -e $warn_prefix $2;
         echo -e "["$time"] " $@ >>log.log;
+
+    elif [ "$1" == STARS ]; then
+        echo -e "\n* * *\n";
     else
         echo -e "\n";
     fi;
+}
+
+function selectYN(){
+	#If 1 - init.sh -> Bye, If 2 - init.sh -> CreateContainer.sh
+	select yesno in "Yes" "No"
+	do
+		if [ "$yesno" = No ]; then
+		exit 1;
+		elif [ "$yesno" = Yes ]; then
+		exit 0;
+		else log WARN "To select use Yes/No";
+		fi;
+	done;
 }
