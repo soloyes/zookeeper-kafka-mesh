@@ -1,0 +1,14 @@
+FROM phusion/baseimage
+RUN sed -i 's/#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
+
+RUN rm -f /etc/service/sshd/down
+
+# Regenerate SSH host keys. baseimage-docker does not contain any, so you
+# have to do that yourself. You may also comment out this instruction; the
+# init system will auto-generate one during boot.
+RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
+
+RUN apt-get update && \
+        apt-get install -y default-jre --no-install-recommends && \
+        apt-get install -y zookeeper --no-install-recommends
+
