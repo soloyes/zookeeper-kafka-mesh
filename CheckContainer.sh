@@ -37,7 +37,6 @@ else
 		#Get big ID from short ID. Then get IP from big ID and NetName
 		echo $(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $i)\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//') $i >> $1IP;
 	done;
-
     selectYN;
 fi;
 unset Containers;

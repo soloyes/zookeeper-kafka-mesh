@@ -29,11 +29,15 @@ log STARS;
 #Check and create zookeeper node(s)
 ./CheckContainer.sh zookeeper create;
 if [ $? -eq 0 ]; then
-	./CreateContainer.sh zookeeper;
-fi;
-#Exit when add failure
-if [ $? -eq 1 ]; then
-	exit 1;
+    while true; do
+	    ./CreateContainer.sh zookeeper;
+	    if [ $? -eq 1 ]; then
+	        break;
+	    #Exit init.sh, when add failure
+	    elif [ $? -eq 2 ]; then
+	        exit 1;
+	    fi
+	done;
 fi;
 log STARS;
 ######

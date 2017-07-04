@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 function log(){
     local info_prefix="\e[32m[INFO]\e[0m: ";
     local warn_prefix="\e[33m[WARN]\e[0m: ";
@@ -22,7 +23,6 @@ function log(){
 }
 
 function selectYN(){
-	#If 1 - init.sh -> Bye, If 2 - init.sh -> CreateContainer.sh
 	select yesno in "Yes" "No"
 	do
 		if [ "$yesno" = No ]; then
