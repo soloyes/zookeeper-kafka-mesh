@@ -3,9 +3,9 @@
 Righit now it is tested only on Ubuntu.
 In case of **Ubuntu**, we must manipulate with sudo rights for docker. Here is one of possible way:
 
-1. sudo groupadd docker
-2. sudo usermod -aG docker $$yourUser$$
-3. restart your PC
+	1. sudo groupadd docker
+	2. sudo usermod -aG docker $$yourUser$$
+	3. restart your PC
 
 Other case will have problems, coz script is not apply to "sudo".
 Need to be sure docker is not required for "sudo".
