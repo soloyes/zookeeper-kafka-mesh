@@ -47,11 +47,15 @@ log STARS;
 #Check and create kafka node(s)
 ./CheckContainer.sh kafka create;
 if [ $? -eq 0 ]; then
-        ./CreateContainer.sh kafka;
-fi;
-#Exit when add failure
-if [ $? -eq 1 ]; then
-        exit 1;
+    while true; do
+	    ./CreateContainer.sh kafka;
+	    if [ $? -eq 1 ]; then
+	        break;
+	    #Exit init.sh, when add failure
+	    elif [ $? -eq 2 ]; then
+	        exit 1;
+	    fi
+	done;
 fi;
 log STARS;
 ######

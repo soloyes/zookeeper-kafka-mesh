@@ -10,5 +10,8 @@ RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
 
 RUN apt-get update && \
         apt-get install -y default-jre --no-install-recommends && \
-        apt-get install -y kafka --no-install-recommends
-
+        apt-get install -y wget --no-install-recommends
+RUN wget "http://mirror.cc.columbia.edu/pub/software/apache/kafka/0.8.2.1/kafka_2.11-0.8.2.1.tgz" -P /home
+RUN mkdir -p /home/kafka
+RUN tar zxvf /home/kafka_2.11-0.8.2.1.tgz -C /home/kafka --strip 1
+RUN rm /home/kafka_2.11-0.8.2.1.tgz

@@ -28,21 +28,20 @@ function RestoreKafka() {
 	log INFO "Backup and Restart $2 process on container "$(echo $(docker exec $1 /bin/bash -c "cat /etc/hosts | grep $1") | awk '{print $1}');
     docker exec $1 /bin/bash -c "cp -f /etc/hosts.backup /etc/hosts";
 	docker exec $1 /bin/bash -c "cp -f /home/kafka/config/server.properties.backup /home/kafka/config/server.properties";
-
 	./RestartKafkaProcess.sh $1 $2;
 }
 
 function UpdateKafkaHosts() {
 	#Add all broker IP Host to /etc/hosts to make full relation
 	if [ "$1" =  "$(docker ps -lq)" ]; then
-                while read line;           
-                do           
-                        docker exec $1 /bin/bash -c "echo $line | grep -v $1 >> /etc/hosts";          
-                done <$2IP;
-        else
-		IP=$(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $(docker ps -lq))\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//');
-                docker exec $1 /bin/bash -c "echo $IP $(docker ps -lq) >> /etc/hosts";
-        fi;
+        while read line;
+        do
+            docker exec $1 /bin/bash -c "echo $line | grep -v $1 >> /etc/hosts";
+        done <$2IP;
+    else
+	IP=$(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $(docker ps -lq))\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//');
+    docker exec $1 /bin/bash -c "echo $IP $(docker ps -lq) >> /etc/hosts";
+    fi;
 	unset IP;
 }
 function PushKafka() {
@@ -56,15 +55,9 @@ function PushKafka() {
 function PushKafkaZoo() {
 	docker exec $1 /bin/bash -c "cp -f /home/kafka/config/server.properties /home/kafka/config/server.properties.backup";
 	./UpdateKafkaCfg.sh $1 $2;
-        ./RestartKafkaProcess.sh $1 $2;	
+    ./RestartKafkaProcess.sh $1 $2;
 }
 
-function RestoreKafkaZoo() {
-        echo "Backup and Restart $2 process on container "$(echo $(docker exec $1 /bin/bash -c "cat /etc/hosts | grep $1") | awk '{print $1}');
-        docker exec $1 /bin/bash -c "cp -f /home/kafka/config/server.properties.backup /home/kafka/config/server.properties";
-
-        ./RestartKafkaProcess.sh $1 $2;
-}
 function Check() {	
 if [ "$2" = zookeeper ]; then
 	###TEST Push failure
@@ -72,11 +65,8 @@ if [ "$2" = zookeeper ]; then
 	#docker exec $1 /bin/bash -c "rm /var/lib/zookeeper/zookeeper_server.pid";
 	#fi;
 	###
-	if [ "$(echo $(docker exec $1 /bin/bash -c " [[ -f /var/lib/zookeeper/zookeeper_server.pid ]] && echo 0 || echo 1"))" = 0 ]; then
-		return 0;
-	else
-		return 1;
-	fi;
+	[[ "$(echo $(docker exec $1 /bin/bash -c \
+	" [[ -f /var/lib/zookeeper/zookeeper_server.pid ]] && echo 0 || echo 1"))" = 0 ]] && return 0 || return 1;
 elif [ "$2" = kafka ]; then
 	###TEST Push failure
 	#if [ "$(echo $(docker exec $1 /bin/bash -c "cat /etc/hosts | grep $1") | awk '{print $1}')" = "10.10.10.3" ]; then
@@ -85,13 +75,8 @@ elif [ "$2" = kafka ]; then
 	kafkaprocess=($(docker exec $1 /bin/bash -c "ps ax | grep -i 'kafka\.Kafka' | grep java | grep -v grep"));	
 	#fi;
 	###
-	if [ "${kafkaprocess[0]}" != "" ]; then
-                unset kafkaprocess;
-		return 0;
-        else
-		unset kafkaprocess;
-        	return 1;
-	fi;
+	[[ "${kafkaprocess[0]}" != "" ]] && return 0 || return 1;
+	unset kafkaprocess;
 fi;
 }
 
@@ -102,7 +87,7 @@ function execute() {
     echo "New node $2 server $3 restarted success. $([ "$(cat $2IP | wc -l)" -ne 1 ] && echo "Restarting other nodes:")";
     local i;
 	for i in $(grep -v $3 $2IP | awk '{print $2}'); do
-		#Remember changed servers to rallback in case of fail continue of configs pushing
+		#Remember changed servers to rollback in case of fail continue of configs pushing
         ChangedContainers+=("$i");
 		#
         [[ "$2" = zookeeper ]] && ./PushZoo.sh $i $2 || PushKafka $i $2;
@@ -111,7 +96,7 @@ function execute() {
             echo "Some problems with process start appears. Backup containers:"
             local j;
 			for j in "${ChangedContainers[@]}"; do
-                [[ "$2" = zookeeper ]] && RestoreZooZoo $j $2 || RestoreKafka $j $2;
+                [[ "$2" = zookeeper ]] && RestoreZoo $j $2 || RestoreKafka $j $2;
             done;
 			unset j;
 			unset ChangedContainers;
@@ -121,7 +106,7 @@ function execute() {
 	done;
 	unset i;
 
-	#Push Kafka after new Zoo added.	
+	#After each Zookeeper was added, we need to refresh all kafka nodes.
 	if [ "$2" = zookeeper ]; then
 		unset ChangedContainers;
 		Containers=$(docker ps | grep baseimage-kafka | wc -l);
@@ -137,13 +122,14 @@ function execute() {
                     echo "Some problems with process start appears. Backup containers:";
 				    local i;
 				    for i in $(grep -v $3 $2IP | awk '{print $2}'); do
-		                RestoreZooZoo $i $2;
+		                RestoreZoo $i $2;
 				    done;
 				    unset i;
 				    local j;
 
                     for j in "${ChangedContainers[@]}"; do
-                        RestoreKafkaZoo $j kafka;
+                        docker exec $j /bin/bash -c "cp -f /etc/hosts.backup /etc/hosts";
+                        RestoreKafka $j kafka;
                     done;
                     unset j;
                     unset ChangedContainers;

@@ -10,6 +10,9 @@ Make exec all files:
 
 It operating with images based on Dockerfile: baseimage-zookeeper, baseimage-kafka.
 Both images will install JRE+kafka/zookeeper software insight.
+Use:
+	docker build -t baseimage-zookeeper -f DockerfileZ .
+	docker build -t baseimage-kafka -f DockerfileK . 
 
 Steps to use init.sh
 Script init.sh checking docker process status. Start it if needed. May need the password to input for process start.
