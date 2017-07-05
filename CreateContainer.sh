@@ -9,7 +9,7 @@ if [ ! -f NetName ]; then
 	exit 1;
 fi;
 if [[ "$1" != kafka && "$1" != zookeeper ]]; then
-	log ERROR "Usage: $0 baseimage-(zookeeper/kafka) (create/delete)";
+	log ERROR "Usage: $0 (zookeeper/kafka) (create/delete)";
 	exit 1;
 fi;
 ######
@@ -23,6 +23,7 @@ IP=$(docker network inspect --format "{{ index .Containers \"$ID\" }}" $(cat Net
 echo "$IP ${ID:0:12}" >> $1IP;
 ##
 log INFO "New $1 container $IP";
+log INFO_s "$1IP contains:\n$(cat $1IP)";
 #Push new ID's and IP's to new added containers
 ./PushConfiguration.sh ${ID:0:12} $1 $IP $(cat $1_myid);
 #If nothing problem, we can add more.

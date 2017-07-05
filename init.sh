@@ -4,6 +4,7 @@
 #InfoBip interview test procedure. Prepared by Solovev Vitaly.
 ######
 
+######
 clear;
 sleep 1;
 log INFO "Welcome to infoBip interview test procedure!";
@@ -42,6 +43,7 @@ fi;
 log STARS;
 ######
 
+######
 #Check and create kafka node(s)
 ./CheckContainer.sh kafka create;
 if [ $? -eq 0 ]; then
@@ -51,7 +53,9 @@ fi;
 if [ $? -eq 1 ]; then
         exit 1;
 fi;
-echo -e "\n* * *\n";
+log STARS;
+######
+
 #Delete menu
 ./CheckContainer.sh zookeeper delete;
 if [ $? -eq 0 ]; then

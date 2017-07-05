@@ -1,4 +1,5 @@
 #!/bin/bash
+. ./functions
 # $1 - Container type (zookeeper/kafka)
 # $2 - operation (create/delete)
 
@@ -17,6 +18,7 @@ if [ "$2" = create ]; then
         else
                 echo $(($(cat $1_myid)+1)) > $1_myid;
         fi;
+
 elif [ "$2" = delete ]; then
         if [ "$(cat $1_myid | wc -l)" -eq 0 ]; then
                 echo 1 >> $1_myid;
@@ -24,3 +26,5 @@ elif [ "$2" = delete ]; then
                 echo $(($(cat $1_myid)-1)) > $1_myid;
         fi;
 fi;
+
+log INFO_s "$1_myid contains:\n$(cat $1_myid)";

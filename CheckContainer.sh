@@ -6,12 +6,12 @@
 
 ######
 if [[ "$1" != kafka && "$1" != zookeeper ]]; then
-	log ERROR "Usage: $0 baseimage-(zookeeper/kafka) (create/delete)"
+	log ERROR "Usage: $0 (zookeeper/kafka) (create/delete)"
 	exit 1;
 fi;
 
 if [[ "$2" != create && "$2" != delete ]]; then
-	log ERROR "Usage: $0 baseimage-(zookeeper/kafka) (create/delete)"
+	log ERROR "Usage: $0 (zookeeper/kafka) (create/delete)"
 	exit 1;
 fi;
 ######

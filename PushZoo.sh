@@ -1,7 +1,22 @@
 #!/bin/bash
+. ./functions
 #Push zoo IDs to zoo containers
 # $1 - Container ID
 # $2 - Container type (zookeeper/kafka)
+
+######
+if [[ "$2" != kafka && "$2" != zookeeper ]]; then
+	log ERROR "Usage: $0 ContainerID (zookeeper/kafka)";
+	exit 1;
+fi;
+
+if [[ "$1" == "" ]]; then
+	log ERROR "Usage: $0 ContainerID (zookeeper/kafka)";
+	exit 1;
+fi;
+######
+
+######
 docker exec $1 /bin/bash -c "cp -f /etc/zookeeper/conf/zoo.cfg /etc/zookeeper/conf/zoo.cfg.backup";
 docker exec $1 /bin/bash -c "cp -f /etc/zookeeper/conf/zoo.cfg.infobip /etc/zookeeper/conf/zoo.cfg";
 #Add all servers to zoo.cfg
