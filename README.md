@@ -1,18 +1,18 @@
 In case of Ubuntu, we must manipulate with sudo rights for docker. Here is one of possible way:
-	1) sudo groupadd docker
-	2) sudo usermod -aG docker $$yourUser$$
-	3) restart your PC
+	1. sudo groupadd docker
+	2. sudo usermod -aG docker $$yourUser$$
+	3. restart your PC
 Other case will have problems, coz script is not include any "sudo" insight.
 Need to be sure docker command is not require "sudo".
 
 Make exec all files:
-	1) chmod +x infoBip/*.sh
+	1. chmod +x infoBip/*.sh
 
 It operating with images based on Dockerfile: baseimage-zookeeper, baseimage-kafka.
 Both images will install JRE+kafka/zookeeper software insight.
 Use:
-	docker build -t baseimage-zookeeper -f DockerfileZ .
-	docker build -t baseimage-kafka -f DockerfileK . 
+<h6>docker build -t baseimage-zookeeper -f DockerfileZ .
+<h6>docker build -t baseimage-kafka -f DockerfileK . 
 
 Steps to use init.sh
 Script init.sh checking docker process status. Start it if needed. May need the password to input for process start.
