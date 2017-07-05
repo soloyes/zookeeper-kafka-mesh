@@ -1,20 +1,24 @@
-In case of Ubuntu, we must manipulate with sudo rights for docker. Here is one of possible way:
+In case of **Ubuntu**, we must manipulate with sudo rights for docker. Here is one of possible way:
+
 	1. sudo groupadd docker
 	2. sudo usermod -aG docker $$yourUser$$
 	3. restart your PC
+	
 Other case will have problems, coz script is not include any "sudo" insight.
 Need to be sure docker command is not require "sudo".
 
 Make exec all files:
+
 	1. chmod +x infoBip/*.sh
 
 It operating with images based on Dockerfile: baseimage-zookeeper, baseimage-kafka.
 Both images will install JRE+kafka/zookeeper software insight.
 Use:
+
 <h6>docker build -t baseimage-zookeeper -f DockerfileZ .
 <h6>docker build -t baseimage-kafka -f DockerfileK . 
 
-Steps to use init.sh
+**Steps to use init.sh**
 Script init.sh checking docker process status. Start it if needed. May need the password to input for process start.
 Script init.sh is create new network (if u already have others, it is OK, network name is any) from predefined ranges, just follow the instructions. Then it create new containers (if u already have others, it is OK) one-by-one belong to created network. Firstly we create zookeeper node, then we create kafka node. Script also can delete containers one-by-one, just follow the instructions. To delete and create we use init.sh.
 
@@ -25,7 +29,7 @@ Just use ./SetPass.sh to set root user password as "root" (will set password to 
 
 Use Clear.sh to delete all configuration. It is fast way to have a test from begin.
 
-Limits and improvements
+**Limits and improvements**
 
 Limit 1:
 Add/delete procedures base only on restart process task insight the container (check log files, PID files then make some conclusion). It restart every process one-by-one, wait until it starts, then restart next one.
