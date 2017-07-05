@@ -1,3 +1,5 @@
+##### Using Docker create any number of zookeeper and kafka containers without service interruption. Bash control menu. 
+
 In case of **Ubuntu**, we must manipulate with sudo rights for docker. Here is one of possible way:
 
 	1. sudo groupadd docker
