@@ -52,10 +52,16 @@ function PushKafka() {
 	./UpdateKafkaCfg.sh $1 $2;
 	./RestartKafkaProcess.sh $1 $2;
 }
-function PushKafkaZoo() {
-	docker exec $1 /bin/bash -c "cp -f /home/kafka/config/server.properties /home/kafka/config/server.properties.backup";
-	./UpdateKafkaCfg.sh $1 $2;
-    ./RestartKafkaProcess.sh $1 $2;
+
+function PushZoo() {
+    docker exec $1 /bin/bash -c "cp -f /etc/zookeeper/conf/zoo.cfg /etc/zookeeper/conf/zoo.cfg.backup";
+    docker exec $1 /bin/bash -c "cp -f /etc/zookeeper/conf/zoo.cfg.infobip /etc/zookeeper/conf/zoo.cfg";
+    #Add all servers to zoo.cfg
+    for j in $(cat $2IP | awk '{print $2}'); do
+	    docker exec $1 /bin/bash -c "echo "server.$(docker exec $j /bin/bash -c "cat /etc/zookeeper/conf/myid")=$(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $j)\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//'):2888:3888" >> /etc/zookeeper/conf/zoo.cfg";
+    done;
+    log INFO "Restart $2 process on container $(docker exec $1 /bin/bash -c "cat /etc/hosts | grep $1" | awk '{print $1}')";
+    docker exec $1 /usr/share/zookeeper/bin/zkServer.sh restart 1>/dev/null 2>/dev/null;
 }
 
 function Check() {	
@@ -81,19 +87,19 @@ fi;
 }
 
 function execute() {
-	[[ "$2" = zookeeper ]] && ./PushZoo.sh $1 $2 || PushKafka $1 $2;
+	[[ "$2" = zookeeper ]] && PushZoo $1 $2 || PushKafka $1 $2;
 	Check $1 $2;
     [ $? -eq 1 ] && exit 1;
-    echo "New node $2 server $3 restarted success. $([ "$(cat $2IP | wc -l)" -ne 1 ] && echo "Restarting other nodes:")";
+    log INFO "New node $2 server $3 restarted success. $([ "$(cat $2IP | wc -l)" -ne 1 ] && echo "Restarting other nodes:")";
     local i;
 	for i in $(grep -v $3 $2IP | awk '{print $2}'); do
 		#Remember changed servers to rollback in case of fail continue of configs pushing
         ChangedContainers+=("$i");
 		#
-        [[ "$2" = zookeeper ]] && ./PushZoo.sh $i $2 || PushKafka $i $2;
+        [[ "$2" = zookeeper ]] && PushZoo $i $2 || PushKafka $i $2;
 		Check $i $2;
         if [ $? -eq 1 ]; then
-            echo "Some problems with process start appears. Backup containers:"
+            log ERROR "Some problems with process start appears. Backup containers:"
             local j;
 			for j in "${ChangedContainers[@]}"; do
                 [[ "$2" = zookeeper ]] && RestoreZoo $j $2 || RestoreKafka $j $2;
@@ -102,7 +108,7 @@ function execute() {
 			unset ChangedContainers;
             exit 1;
         fi;
-        echo "$2 server $(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $i)\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//') restarted success";
+        log INFO "$2 server $(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $i)\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//') restarted success";
 	done;
 	unset i;
 
@@ -116,10 +122,10 @@ function execute() {
                 #Remember changed servers to rollback in case of fail continue of configs pushing
 			    ChangedContainers+=("$i");
                 #
-                PushKafkaZoo $i kafka;
+                PushKafka $i kafka;
                 Check $i kafka;
                 if [ $? -eq 1 ]; then
-                    echo "Some problems with process start appears. Backup containers:";
+                    log ERROR "Some problems with process start appears. Backup containers:";
 				    local i;
 				    for i in $(grep -v $3 $2IP | awk '{print $2}'); do
 		                RestoreZoo $i $2;
@@ -135,7 +141,7 @@ function execute() {
                     unset ChangedContainers;
                     exit 1;
                 fi;
-                echo "kafka server $(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $i)\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//') restarted success";
+                log INFO "kafka server $(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $i)\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//') restarted success";
             done;
             unset i;
 		fi;

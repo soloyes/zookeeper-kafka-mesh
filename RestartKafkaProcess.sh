@@ -1,8 +1,14 @@
 #!/bin/bash
-#Restart kafka containers
+. ./functions
 # $1 - Container ID
 # $2 - Container type (zookeeper/kafka)
-echo "Restart $2 process on container $(docker exec $1 /bin/bash -c "cat /etc/hosts | grep $1" | awk '{print $1}')";
+
+if [[ "$2" != kafka && "$2" != zookeeper ]]; then
+        log ERROR "Usage: $0 containerID (zookeeper/kafka)";
+        exit 1;
+fi;
+
+log INFO "Restart $2 process on container $(docker exec $1 /bin/bash -c "cat /etc/hosts | grep $1" | awk '{print $1}')";
 kafkaprocess=($(docker exec $1 /bin/bash -c "ps ax | grep -i 'kafka\.Kafka' | grep java | grep -v grep"));
 if [ "${kafkaprocess[0]}" = "" ]; then
 	docker exec $1 /bin/bash -c "/home/kafka/bin/kafka-server-start.sh -daemon /home/kafka/config/server.properties";

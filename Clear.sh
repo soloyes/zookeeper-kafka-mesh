@@ -1,5 +1,10 @@
 #!/bin/bash
 #Delete all containers and network
+. ./functions
+
+log STARS;
+log WARN "Clear all configuration with Clear.sh";
+
 if [ -e NetName ]; then
 	j=0;
 	for i in $(docker ps -q); do 
@@ -15,5 +20,8 @@ if [ -e NetName ]; then
 	docker network rm $(cat NetName) 1>/dev/null;
 	[ $? -eq 0 ]; rm NetName; [ $? -eq 0 ]; rm *IP; rm *myid;
 else
-	echo "There is no network, please create it using init.sh";
+	log ERROR "There is no network, please create it using init.sh";
 fi;
+
+log STARS;
+log INFO "Exit Clear.sh";

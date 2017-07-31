@@ -27,37 +27,39 @@ log STARS;
 ######
 
 ######
-#Check and create zookeeper node(s)
-./CheckContainer.sh zookeeper create;
-if [ $? -eq 0 ]; then
-    while true; do
-	    ./CreateContainer.sh zookeeper;
-	    if [ $? -eq 1 ]; then
-	        break;
-	    #Exit init.sh, when add failure
-	    elif [ $? -eq 2 ]; then
-	        exit 1;
-	    fi
-	done;
-fi;
-log STARS;
+#Check and create zookeeper/kafka node(s)
+for i in zookeeper kafka; do
+	./CheckContainer.sh $i create;
+	if [ $? -eq 0 ]; then
+		while true; do
+		./CreateContainer.sh $i;
+			if [ $? -eq 1 ]; then
+				break;
+			#Exit init.sh, when add failure
+			elif [ $? -eq 2 ]; then
+	        		exit 1;
+	    		fi
+		done;
+	fi;
+	log STARS;
+done;
 ######
 
 ######
 #Check and create kafka node(s)
-./CheckContainer.sh kafka create;
-if [ $? -eq 0 ]; then
-    while true; do
-	    ./CreateContainer.sh kafka;
-	    if [ $? -eq 1 ]; then
-	        break;
-	    #Exit init.sh, when add failure
-	    elif [ $? -eq 2 ]; then
-	        exit 1;
-	    fi
-	done;
-fi;
-log STARS;
+#./CheckContainer.sh kafka create;
+#if [ $? -eq 0 ]; then
+#	while true; do
+#	./CreateContainer.sh kafka;
+#		if [ $? -eq 1 ]; then
+#			break;
+#		#Exit init.sh, when add failure
+#		elif [ $? -eq 2 ]; then
+#			exit 1;
+#		fi
+#	done;
+#fi;
+#log STARS;
 ######
 
 #Delete menu
@@ -74,4 +76,8 @@ echo -e "\n* * *\n";
 if [ $? -eq 0 ]; then
         ./DeleteContainer.sh kafka;
 fi;
+
+log STARS;
+log INFO "Exit init.sh";
+log SRARS;
 exit 0;
