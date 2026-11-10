@@ -1,28 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
   <title id="t">zookeeper-kafka-mesh architecture</title>
-  <desc id="d">Control scripts on the host drive a docker network holding a ZooKeeper ensemble and Kafka brokers through docker exec.</desc>
+  <desc id="d">Control scripts on the host drive a docker network holding a ZooKeeper ensemble and Kafka brokers through docker run, exec and stop.</desc>
   <style>
     .bg      { fill: #ffffff; stroke: #d0d7de; }
     .text    { fill: #1f2328; }
     .muted   { fill: #59636e; }
     .panel   { fill: #f6f8fa; stroke: #d0d7de; }
+    .pill    { fill: #ffffff; stroke: #d0d7de; }
     .net     { fill: #f6f8fa; stroke: #8c959f; stroke-dasharray: 6 4; }
+    .zkgroup { fill: #ffffff; stroke: #1a7f37; stroke-opacity: 0.45; }
+    .kgroup  { fill: #ffffff; stroke: #8250df; stroke-opacity: 0.45; }
     .script  { fill: #ddf4ff; stroke: #0969da; }
     .state   { fill: #fff8c5; stroke: #9a6700; }
     .zk      { fill: #dafbe1; stroke: #1a7f37; }
     .kafka   { fill: #fbefff; stroke: #8250df; }
+    .ln      { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     .zkline  { stroke: #1a7f37; }
     .kline   { stroke: #8250df; }
     .ctl     { stroke: #0969da; }
     .ctlhead { fill: #0969da; }
     .zkhead  { fill: #1a7f37; }
     .khead   { fill: #8250df; }
+    .mono    { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     @media (prefers-color-scheme: dark) {
       .bg      { fill: #0d1117; stroke: #30363d; }
       .text    { fill: #e6edf3; }
       .muted   { fill: #9198a1; }
       .panel   { fill: #161b22; stroke: #30363d; }
+      .pill    { fill: #0d1117; stroke: #30363d; }
       .net     { fill: #161b22; stroke: #6e7681; }
+      .zkgroup { fill: #0d1117; stroke: #3fb950; }
+      .kgroup  { fill: #0d1117; stroke: #a371f7; }
       .script  { fill: #0c2d6b; stroke: #58a6ff; }
       .state   { fill: #3b2e00; stroke: #d29922; }
       .zk      { fill: #04260f; stroke: #3fb950; }
@@ -36,127 +44,132 @@
     }
   </style>
   <defs>
-    <marker id="aCtl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ctlhead"/></marker>
-    <marker id="aZk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="zkhead"/></marker>
-    <marker id="aK" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="khead"/></marker>
+    <marker id="aCtl" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0.8 L10,5 L0,9.2 z" class="ctlhead" stroke-linejoin="round"/></marker>
+    <marker id="aZk" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0.8 L10,5 L0,9.2 z" class="zkhead" stroke-linejoin="round"/></marker>
+    <marker id="aK" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0.8 L10,5 L0,9.2 z" class="khead" stroke-linejoin="round"/></marker>
   </defs>
 
   <rect class="bg" x="0.5" y="0.5" width="959" height="599" rx="12"/>
 
   <!-- Host -->
   <text class="text" x="24" y="36" font-size="18" font-weight="600">Linux host with Docker</text>
-  <text class="muted" x="24" y="56" font-size="13">everything is driven from the shell through the docker CLI</text>
+  <text class="muted" x="24" y="56" font-size="13">plain bash and the docker CLI drive everything, no orchestrator</text>
 
-  <!-- Control scripts panel -->
-  <rect class="panel" x="24" y="72" width="270" height="504" rx="10"/>
+  <!-- Control scripts -->
+  <rect class="panel" x="24" y="72" width="260" height="504" rx="10"/>
   <text class="text" x="40" y="98" font-size="15" font-weight="600">Control scripts</text>
 
-  <rect class="script" x="40" y="112" width="238" height="40" rx="6"/>
-  <text class="text" x="52" y="132" font-size="13" font-weight="600">init.sh</text>
+  <rect class="script" x="40" y="112" width="228" height="40" rx="6"/>
+  <text class="text" x="52" y="131" font-size="13" font-weight="600">init.sh</text>
   <text class="muted" x="52" y="146" font-size="11">menu, or --zookeepers N --kafkas M</text>
 
-  <rect class="script" x="40" y="162" width="114" height="30" rx="6"/>
+  <rect class="script" x="40" y="162" width="109" height="30" rx="6"/>
   <text class="text" x="50" y="182" font-size="12">CheckProcess</text>
-  <rect class="script" x="164" y="162" width="114" height="30" rx="6"/>
-  <text class="text" x="174" y="182" font-size="12">CreateNetwork</text>
+  <rect class="script" x="159" y="162" width="109" height="30" rx="6"/>
+  <text class="text" x="169" y="182" font-size="12">CreateNetwork</text>
 
-  <rect class="script" x="40" y="200" width="114" height="30" rx="6"/>
+  <rect class="script" x="40" y="200" width="109" height="30" rx="6"/>
   <text class="text" x="50" y="220" font-size="12">CheckContainer</text>
-  <rect class="script" x="164" y="200" width="114" height="30" rx="6"/>
-  <text class="text" x="174" y="220" font-size="12">CreateContainer</text>
+  <rect class="script" x="159" y="200" width="109" height="30" rx="6"/>
+  <text class="text" x="169" y="220" font-size="12">CreateContainer</text>
 
-  <rect class="script" x="40" y="238" width="238" height="30" rx="6"/>
-  <text class="text" x="50" y="258" font-size="12">PushConfiguration (roll + rollback)</text>
+  <rect class="script" x="40" y="238" width="228" height="40" rx="6"/>
+  <text class="text" x="52" y="256" font-size="12" font-weight="600">PushConfiguration</text>
+  <text class="muted" x="52" y="271" font-size="11">roll out, roll back on failure</text>
 
-  <rect class="script" x="40" y="276" width="114" height="30" rx="6"/>
-  <text class="text" x="50" y="296" font-size="12">PushZoo</text>
-  <rect class="script" x="164" y="276" width="114" height="30" rx="6"/>
-  <text class="text" x="174" y="296" font-size="12">UpdateKafkaCfg</text>
+  <rect class="script" x="40" y="286" width="109" height="30" rx="6"/>
+  <text class="text" x="50" y="306" font-size="12">PushZoo</text>
+  <rect class="script" x="159" y="286" width="109" height="30" rx="6"/>
+  <text class="text" x="169" y="306" font-size="12">UpdateKafkaCfg</text>
 
-  <rect class="script" x="40" y="314" width="238" height="30" rx="6"/>
-  <text class="text" x="50" y="334" font-size="12">RestartKafkaProcess (log wait)</text>
+  <rect class="script" x="40" y="324" width="228" height="30" rx="6"/>
+  <text class="text" x="50" y="344" font-size="12">RestartKafkaProcess (log wait)</text>
 
-  <rect class="script" x="40" y="352" width="114" height="30" rx="6"/>
-  <text class="text" x="50" y="372" font-size="12">DeleteContainer</text>
-  <rect class="script" x="164" y="352" width="114" height="30" rx="6"/>
-  <text class="text" x="174" y="372" font-size="12">ID.sh</text>
+  <rect class="script" x="40" y="362" width="109" height="30" rx="6"/>
+  <text class="text" x="50" y="382" font-size="12">DeleteContainer</text>
+  <rect class="script" x="159" y="362" width="109" height="30" rx="6"/>
+  <text class="text" x="169" y="382" font-size="12">ID.sh</text>
 
-  <rect class="script" x="40" y="390" width="114" height="30" rx="6"/>
-  <text class="text" x="50" y="410" font-size="12">Clear</text>
-  <rect class="script" x="164" y="390" width="114" height="30" rx="6"/>
-  <text class="text" x="174" y="410" font-size="12">SetPass</text>
+  <rect class="script" x="40" y="400" width="109" height="30" rx="6"/>
+  <text class="text" x="50" y="420" font-size="12">Clear</text>
+  <rect class="script" x="159" y="400" width="109" height="30" rx="6"/>
+  <text class="text" x="169" y="420" font-size="12">SetPass</text>
 
-  <text class="text" x="40" y="450" font-size="13" font-weight="600">State files</text>
-  <rect class="state" x="40" y="460" width="238" height="100" rx="6"/>
-  <text class="text" x="52" y="480" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">NetName</text>
-  <text class="text" x="52" y="498" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">zookeeperIP  kafkaIP</text>
-  <text class="text" x="52" y="516" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">zookeeper_myid  kafka_myid</text>
-  <text class="text" x="52" y="534" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">log.log</text>
-  <text class="muted" x="52" y="551" font-size="11">"ip container-id" per node, id counters</text>
+  <text class="text" x="40" y="458" font-size="13" font-weight="600">State files</text>
+  <rect class="state" x="40" y="468" width="228" height="100" rx="6"/>
+  <text class="text mono" x="52" y="488" font-size="12">NetName</text>
+  <text class="text mono" x="52" y="506" font-size="12">zookeeperIP  kafkaIP</text>
+  <text class="text mono" x="52" y="524" font-size="12">zookeeper_myid  kafka_myid</text>
+  <text class="text mono" x="52" y="542" font-size="12">log.log</text>
+  <text class="muted" x="52" y="559" font-size="11">"ip container-id" per node, id counters</text>
 
-  <!-- docker exec arrow -->
-  <line class="ctl" x1="296" y1="253" x2="352" y2="253" stroke-width="2.5" marker-end="url(#aCtl)"/>
-  <text class="muted" x="300" y="240" font-size="11">docker</text>
-  <text class="muted" x="300" y="274" font-size="11">run / exec</text>
-  <text class="muted" x="300" y="288" font-size="11">/ stop</text>
+  <!-- host to network -->
+  <rect class="pill" x="292" y="198" width="80" height="54" rx="6"/>
+  <text class="muted mono" x="332" y="214" font-size="10" text-anchor="middle">docker run</text>
+  <text class="muted mono" x="332" y="230" font-size="10" text-anchor="middle">docker exec</text>
+  <text class="muted mono" x="332" y="246" font-size="10" text-anchor="middle">docker stop</text>
+  <line class="ln ctl" x1="284" y1="262" x2="380" y2="262" marker-end="url(#aCtl)"/>
 
   <!-- Docker network -->
-  <rect class="net" x="356" y="72" width="580" height="504" rx="10"/>
-  <text class="text" x="374" y="98" font-size="15" font-weight="600">User-defined docker network</text>
-  <text class="muted" x="374" y="116" font-size="12">private subnet, e.g. 10.10.10.0/24, one container per node (phusion/baseimage, sshd)</text>
+  <rect class="net" x="380" y="72" width="556" height="504" rx="10"/>
+  <text class="text" x="396" y="98" font-size="15" font-weight="600">User-defined docker network</text>
+  <text class="muted" x="396" y="116" font-size="12">private subnet of your choice, e.g. 10.10.10.0/24; one phusion/baseimage container per node</text>
 
   <!-- ZooKeeper ensemble -->
-  <text class="text" x="374" y="150" font-size="14" font-weight="600">ZooKeeper 3.9 ensemble</text>
-  <text class="muted" x="374" y="166" font-size="11">zoo.cfg: server.N=ip:2888:3888 for every node</text>
+  <rect class="zkgroup" x="392" y="132" width="532" height="176" rx="10"/>
+  <text class="text" x="406" y="154" font-size="14" font-weight="600">ZooKeeper 3.9 ensemble</text>
+  <text class="muted" x="406" y="170" font-size="11">zoo.cfg lists server.N=ip:2888:3888 for every node</text>
 
-  <rect class="zk" x="374" y="180" width="170" height="78" rx="8"/>
-  <text class="text" x="388" y="202" font-size="13" font-weight="600">zookeeper 1</text>
-  <text class="muted" x="388" y="220" font-size="11">myid 1  ·  10.10.10.2</text>
-  <text class="muted" x="388" y="236" font-size="11">client :2181</text>
-  <text class="text" x="388" y="250" font-size="11" font-weight="600">follower</text>
+  <rect class="zk" x="404" y="182" width="156" height="78" rx="8"/>
+  <text class="text" x="418" y="204" font-size="13" font-weight="600">zookeeper 1</text>
+  <text class="muted" x="418" y="222" font-size="11">myid 1 · 10.10.10.2</text>
+  <text class="muted" x="418" y="238" font-size="11">client port 2181</text>
+  <text class="text" x="418" y="253" font-size="11" font-weight="600">follower</text>
 
-  <rect class="zk" x="560" y="180" width="170" height="78" rx="8"/>
-  <text class="text" x="574" y="202" font-size="13" font-weight="600">zookeeper 2</text>
-  <text class="muted" x="574" y="220" font-size="11">myid 2  ·  10.10.10.3</text>
-  <text class="muted" x="574" y="236" font-size="11">client :2181</text>
-  <text class="text" x="574" y="250" font-size="11" font-weight="600">leader</text>
+  <rect class="zk" x="580" y="182" width="156" height="78" rx="8"/>
+  <text class="text" x="594" y="204" font-size="13" font-weight="600">zookeeper 2</text>
+  <text class="muted" x="594" y="222" font-size="11">myid 2 · 10.10.10.3</text>
+  <text class="muted" x="594" y="238" font-size="11">client port 2181</text>
+  <text class="text" x="594" y="253" font-size="11" font-weight="600">leader</text>
 
-  <rect class="zk" x="746" y="180" width="170" height="78" rx="8"/>
-  <text class="text" x="760" y="202" font-size="13" font-weight="600">zookeeper 3</text>
-  <text class="muted" x="760" y="220" font-size="11">myid 3  ·  10.10.10.4</text>
-  <text class="muted" x="760" y="236" font-size="11">client :2181</text>
-  <text class="text" x="760" y="250" font-size="11" font-weight="600">follower</text>
+  <rect class="zk" x="756" y="182" width="156" height="78" rx="8"/>
+  <text class="text" x="770" y="204" font-size="13" font-weight="600">zookeeper 3</text>
+  <text class="muted" x="770" y="222" font-size="11">myid 3 · 10.10.10.4</text>
+  <text class="muted" x="770" y="238" font-size="11">client port 2181</text>
+  <text class="text" x="770" y="253" font-size="11" font-weight="600">follower</text>
 
   <!-- quorum links -->
-  <line class="zkline" x1="546" y1="219" x2="558" y2="219" stroke-width="2"/>
-  <line class="zkline" x1="732" y1="219" x2="744" y2="219" stroke-width="2"/>
-  <path class="zkline" d="M459,260 L459,276 L831,276 L831,260" fill="none" stroke-width="2"/>
-  <text class="muted" x="560" y="292" font-size="11">quorum and leader election :2888 / :3888</text>
+  <line class="ln zkline" x1="560" y1="221" x2="580" y2="221"/>
+  <line class="ln zkline" x1="736" y1="221" x2="756" y2="221"/>
+  <path class="ln zkline" d="M482,260 V274 a6,6 0 0 0 6,6 H520"/>
+  <path class="ln zkline" d="M796,280 H828 a6,6 0 0 0 6,-6 V260"/>
+  <text class="muted" x="658" y="284" font-size="11" text-anchor="middle">quorum and leader election on :2888 / :3888</text>
+
+  <!-- brokers to ensemble -->
+  <line class="ln zkline" x1="516" y1="396" x2="516" y2="308" marker-end="url(#aZk)"/>
+  <line class="ln zkline" x1="800" y1="396" x2="800" y2="308" marker-end="url(#aZk)"/>
+  <rect class="pill" x="548" y="332" width="220" height="40" rx="6"/>
+  <text class="text" x="658" y="349" font-size="11" text-anchor="middle">zookeeper.connect: sessions,</text>
+  <text class="text" x="658" y="364" font-size="11" text-anchor="middle">broker registration, controller</text>
 
   <!-- Kafka brokers -->
+  <rect class="kgroup" x="392" y="396" width="532" height="164" rx="10"/>
 
-  <rect class="kafka" x="420" y="420" width="210" height="78" rx="8"/>
-  <text class="text" x="434" y="442" font-size="13" font-weight="600">kafka 1</text>
-  <text class="muted" x="434" y="460" font-size="11">broker.id 1  ·  10.10.10.5  ·  :9092</text>
-  <text class="muted" x="434" y="476" font-size="11">/etc/hosts knows every broker</text>
-  <text class="muted" x="434" y="490" font-size="11">registered at /brokers/ids/1</text>
+  <rect class="kafka" x="416" y="414" width="200" height="78" rx="8"/>
+  <text class="text" x="430" y="436" font-size="13" font-weight="600">kafka 1</text>
+  <text class="muted" x="430" y="454" font-size="11">broker.id 1 · 10.10.10.5</text>
+  <text class="muted" x="430" y="470" font-size="11">port 9092 · /brokers/ids/1</text>
+  <text class="muted" x="430" y="485" font-size="11">/etc/hosts lists every broker</text>
 
-  <rect class="kafka" x="680" y="420" width="210" height="78" rx="8"/>
-  <text class="text" x="694" y="442" font-size="13" font-weight="600">kafka 2</text>
-  <text class="muted" x="694" y="460" font-size="11">broker.id 2  ·  10.10.10.6  ·  :9092</text>
-  <text class="muted" x="694" y="476" font-size="11">/etc/hosts knows every broker</text>
-  <text class="muted" x="694" y="490" font-size="11">registered at /brokers/ids/2</text>
+  <rect class="kafka" x="700" y="414" width="200" height="78" rx="8"/>
+  <text class="text" x="714" y="436" font-size="13" font-weight="600">kafka 2</text>
+  <text class="muted" x="714" y="454" font-size="11">broker.id 2 · 10.10.10.6</text>
+  <text class="muted" x="714" y="470" font-size="11">port 9092 · /brokers/ids/2</text>
+  <text class="muted" x="714" y="485" font-size="11">/etc/hosts lists every broker</text>
 
-  <line class="kline" x1="632" y1="459" x2="678" y2="459" stroke-width="2" marker-start="url(#aK)" marker-end="url(#aK)"/>
-  <text class="muted" x="636" y="450" font-size="10">replication</text>
+  <line class="ln kline" x1="616" y1="468" x2="700" y2="468" marker-start="url(#aK)" marker-end="url(#aK)"/>
+  <text class="muted" x="658" y="455" font-size="10" text-anchor="middle">replication</text>
 
-  <text class="text" x="374" y="528" font-size="14" font-weight="600">Kafka 3.9 brokers (ZooKeeper mode)</text>
-  <text class="muted" x="374" y="546" font-size="11">server.properties: broker.id=N, zookeeper.connect=every zookeeper:2181</text>
-
-  <!-- Kafka to ZK -->
-  <line class="zkline" x1="525" y1="418" x2="645" y2="300" stroke-width="2" marker-end="url(#aZk)"/>
-  <line class="zkline" x1="785" y1="418" x2="665" y2="300" stroke-width="2" marker-end="url(#aZk)"/>
-  <rect class="panel" x="560" y="346" width="190" height="40" rx="6"/>
-  <text class="text" x="572" y="363" font-size="11">zookeeper.connect: sessions,</text>
-  <text class="text" x="572" y="378" font-size="11">broker registration, controller</text>
+  <text class="text" x="406" y="518" font-size="14" font-weight="600">Kafka 3.9 brokers (ZooKeeper mode)</text>
+  <text class="muted" x="406" y="536" font-size="11">server.properties: broker.id=N, zookeeper.connect=every zookeeper:2181</text>
 </svg>

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="780" viewBox="0 0 960 780" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="800" viewBox="0 0 960 800" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-labelledby="t d">
   <title id="t">Adding a node: push config, rolling restart, health check, rollback</title>
   <desc id="d">A new node is started and checked first, then every existing node is reconfigured and restarted one at a time with a health check; any failure restores the backup configuration on the nodes changed so far.</desc>
   <style>
@@ -6,10 +6,11 @@
     .text   { fill: #1f2328; }
     .muted  { fill: #59636e; }
     .step   { fill: #ddf4ff; stroke: #0969da; }
-    .check  { fill: #fff8c5; stroke: #9a6700; }
+    .check  { fill: #fff8c5; stroke: #9a6700; stroke-linejoin: round; }
     .bad    { fill: #ffebe9; stroke: #cf222e; }
     .good   { fill: #dafbe1; stroke: #1a7f37; }
     .note   { fill: #f6f8fa; stroke: #d0d7de; }
+    .ln     { fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     .flow   { stroke: #59636e; }
     .flowh  { fill: #59636e; }
     .fail   { stroke: #cf222e; }
@@ -34,85 +35,85 @@
     }
   </style>
   <defs>
-    <marker id="aF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="flowh"/></marker>
-    <marker id="aX" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="failh"/></marker>
+    <marker id="aF" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0.8 L10,5 L0,9.2 z" class="flowh" stroke-linejoin="round"/></marker>
+    <marker id="aX" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0.8 L10,5 L0,9.2 z" class="failh" stroke-linejoin="round"/></marker>
   </defs>
 
-  <rect class="bg" x="0.5" y="0.5" width="959" height="779" rx="12"/>
+  <rect class="bg" x="0.5" y="0.5" width="959" height="799" rx="12"/>
   <text class="text" x="24" y="36" font-size="18" font-weight="600">Adding a node without stopping the service</text>
-  <text class="muted" x="24" y="56" font-size="13">CreateContainer.sh → PushConfiguration.sh. Removing a node (DeleteContainer.sh) runs steps 4 and 6 for the remaining nodes.</text>
+  <text class="muted" x="24" y="56" font-size="13">CreateContainer.sh calls PushConfiguration.sh. Removing a node (DeleteContainer.sh) runs steps 4 and 6 for the nodes that stay.</text>
 
   <!-- 1 -->
-  <rect class="step" x="40" y="76" width="520" height="62" rx="8"/>
+  <rect class="step" x="40" y="76" width="520" height="66" rx="8"/>
   <text class="text" x="56" y="100" font-size="14" font-weight="600">1. Start the new container</text>
-  <text class="muted" x="56" y="120" font-size="12">docker run --rm on the mesh network · ID.sh hands out the next id ·</text>
-  <text class="muted" x="56" y="134" font-size="12">"ip container-id" appended to zookeeperIP / kafkaIP</text>
-  <line class="flow" x1="300" y1="138" x2="300" y2="160" stroke-width="2" marker-end="url(#aF)"/>
+  <text class="muted" x="56" y="118" font-size="12">docker run --rm on the mesh network; ID.sh hands out the next id;</text>
+  <text class="muted" x="56" y="134" font-size="12">"ip container-id" is appended to zookeeperIP or kafkaIP</text>
+  <line class="ln flow" x1="300" y1="142" x2="300" y2="166" marker-end="url(#aF)"/>
 
   <!-- 2 -->
-  <rect class="step" x="40" y="162" width="520" height="62" rx="8"/>
-  <text class="text" x="56" y="186" font-size="14" font-weight="600">2. Configure and start the new node</text>
-  <text class="muted" x="56" y="206" font-size="12">ZooKeeper: myid + zoo.cfg with every server.N=ip:2888:3888</text>
-  <text class="muted" x="56" y="220" font-size="12">Kafka: broker.id + zookeeper.connect + /etc/hosts with every broker</text>
-  <line class="flow" x1="300" y1="224" x2="300" y2="246" stroke-width="2" marker-end="url(#aF)"/>
+  <rect class="step" x="40" y="166" width="520" height="66" rx="8"/>
+  <text class="text" x="56" y="190" font-size="14" font-weight="600">2. Configure and start the new node</text>
+  <text class="muted" x="56" y="208" font-size="12">ZooKeeper: myid and a zoo.cfg with server.N=ip:2888:3888 for every node</text>
+  <text class="muted" x="56" y="224" font-size="12">Kafka: broker.id, zookeeper.connect and an /etc/hosts entry for every broker</text>
+  <line class="ln flow" x1="300" y1="232" x2="300" y2="256" marker-end="url(#aF)"/>
 
   <!-- 3 check -->
-  <path class="check" d="M300,248 L440,282 L300,316 L160,282 Z"/>
-  <text class="text" x="300" y="287" font-size="13" font-weight="600" text-anchor="middle">3. New node healthy?</text>
-  <line class="fail" x1="440" y1="282" x2="618" y2="282" stroke-width="2" marker-end="url(#aX)"/>
-  <text class="failt" x="452" y="274" font-size="12" font-weight="600">no</text>
-  <rect class="bad" x="620" y="248" width="300" height="68" rx="8"/>
-  <text class="text" x="636" y="270" font-size="13" font-weight="600">Give up on the new node</text>
-  <text class="muted" x="636" y="288" font-size="12">stop (and so remove) the container, give</text>
-  <text class="muted" x="636" y="304" font-size="12">the id back · old nodes were not touched</text>
-  <line class="flow" x1="300" y1="316" x2="300" y2="340" stroke-width="2" marker-end="url(#aF)"/>
-  <text class="okt" x="310" y="333" font-size="12" font-weight="600">yes</text>
+  <path class="check" d="M300,256 L440,292 L300,328 L160,292 Z"/>
+  <text class="text" x="300" y="297" font-size="13" font-weight="600" text-anchor="middle">3. New node healthy?</text>
+  <line class="ln fail" x1="440" y1="292" x2="596" y2="292" marker-end="url(#aX)"/>
+  <text class="failt" x="450" y="283" font-size="12" font-weight="600">no</text>
+  <rect class="bad" x="596" y="256" width="332" height="72" rx="8"/>
+  <text class="text" x="612" y="280" font-size="13" font-weight="600">Give up on the new node</text>
+  <text class="muted" x="612" y="300" font-size="12">stop the container (--rm removes it) and give</text>
+  <text class="muted" x="612" y="316" font-size="12">the id back. The old nodes were not touched.</text>
+  <line class="ln flow" x1="300" y1="328" x2="300" y2="352" marker-end="url(#aF)"/>
+  <text class="okt" x="312" y="344" font-size="12" font-weight="600">yes</text>
 
   <!-- 4 -->
-  <rect class="step" x="40" y="342" width="520" height="62" rx="8"/>
-  <text class="text" x="56" y="366" font-size="14" font-weight="600">4. Next existing node of the same type (one at a time)</text>
-  <text class="muted" x="56" y="386" font-size="12">copy zoo.cfg / server.properties / hosts to *.backup ·</text>
-  <text class="muted" x="56" y="400" font-size="12">write the new config · restart the process</text>
-  <line class="flow" x1="300" y1="404" x2="300" y2="426" stroke-width="2" marker-end="url(#aF)"/>
+  <rect class="step" x="40" y="352" width="520" height="66" rx="8"/>
+  <text class="text" x="56" y="376" font-size="14" font-weight="600">4. Next existing node of the same type, one at a time</text>
+  <text class="muted" x="56" y="394" font-size="12">copy zoo.cfg / server.properties / hosts to *.backup, write the new</text>
+  <text class="muted" x="56" y="410" font-size="12">configuration, restart the process</text>
+  <line class="ln flow" x1="300" y1="418" x2="300" y2="442" marker-end="url(#aF)"/>
 
   <!-- 5 check -->
-  <path class="check" d="M300,428 L440,462 L300,496 L160,462 Z"/>
-  <text class="text" x="300" y="467" font-size="13" font-weight="600" text-anchor="middle">5. Node back up?</text>
-  <line class="fail" x1="440" y1="462" x2="618" y2="462" stroke-width="2" marker-end="url(#aX)"/>
-  <text class="failt" x="452" y="454" font-size="12" font-weight="600">no</text>
+  <path class="check" d="M300,442 L440,478 L300,514 L160,478 Z"/>
+  <text class="text" x="300" y="483" font-size="13" font-weight="600" text-anchor="middle">5. Node back up?</text>
+  <line class="ln fail" x1="440" y1="478" x2="596" y2="478" marker-end="url(#aX)"/>
+  <text class="failt" x="450" y="469" font-size="12" font-weight="600">no</text>
 
   <!-- rollback -->
-  <rect class="bad" x="620" y="420" width="300" height="104" rx="8"/>
-  <text class="text" x="636" y="442" font-size="13" font-weight="600">Roll back</text>
-  <text class="muted" x="636" y="460" font-size="12">put *.backup back on every node changed</text>
-  <text class="muted" x="636" y="476" font-size="12">so far and restart it, then remove the</text>
-  <text class="muted" x="636" y="492" font-size="12">new node · the mesh is as it was before</text>
-  <text class="muted" x="636" y="512" font-size="12" font-style="italic">exit 2 from CreateContainer.sh</text>
+  <rect class="bad" x="596" y="436" width="332" height="108" rx="8"/>
+  <text class="text" x="612" y="460" font-size="13" font-weight="600">Roll back</text>
+  <text class="muted" x="612" y="480" font-size="12">put *.backup back on every node changed so far</text>
+  <text class="muted" x="612" y="496" font-size="12">and restart it, then remove the new node.</text>
+  <text class="muted" x="612" y="512" font-size="12">The mesh is as it was before.</text>
+  <text class="muted" x="612" y="530" font-size="12" font-style="italic">CreateContainer.sh exits with 2</text>
 
   <!-- loop back -->
-  <path class="flow" d="M160,462 L20,462 L20,373 L38,373" fill="none" stroke-width="2" marker-end="url(#aF)"/>
-  <text class="muted" x="40" y="480" font-size="11">more nodes</text>
-  <line class="flow" x1="300" y1="496" x2="300" y2="522" stroke-width="2" marker-end="url(#aF)"/>
-  <text class="okt" x="310" y="514" font-size="12" font-weight="600">all done</text>
+  <path class="ln flow" d="M160,478 H28 a8,8 0 0 1 -8,-8 V393 a8,8 0 0 1 8,-8 H40" marker-end="url(#aF)"/>
+  <text class="muted" x="48" y="496" font-size="11">more nodes</text>
+  <line class="ln flow" x1="300" y1="514" x2="300" y2="538" marker-end="url(#aF)"/>
+  <text class="okt" x="312" y="530" font-size="12" font-weight="600">all done</text>
 
   <!-- 6 -->
-  <rect class="step" x="40" y="524" width="520" height="62" rx="8"/>
-  <text class="text" x="56" y="548" font-size="14" font-weight="600">6. New ZooKeeper only: roll every Kafka broker</text>
-  <text class="muted" x="56" y="568" font-size="12">new zookeeper.connect · same backup / restart / check, one broker</text>
-  <text class="muted" x="56" y="582" font-size="12">at a time · a failure rolls back the brokers and the ZooKeepers</text>
-  <path class="fail" d="M560,555 L770,555 L770,526" fill="none" stroke-width="2" marker-end="url(#aX)"/>
-  <text class="failt" x="578" y="547" font-size="12" font-weight="600">broker failed</text>
-  <line class="flow" x1="300" y1="586" x2="300" y2="608" stroke-width="2" marker-end="url(#aF)"/>
+  <rect class="step" x="40" y="538" width="520" height="66" rx="8"/>
+  <text class="text" x="56" y="562" font-size="14" font-weight="600">6. After a new ZooKeeper only: roll every Kafka broker</text>
+  <text class="muted" x="56" y="580" font-size="12">new zookeeper.connect, same backup / restart / check, one broker at a time;</text>
+  <text class="muted" x="56" y="596" font-size="12">a broker failure rolls back the brokers and then the ZooKeeper nodes</text>
+  <path class="ln fail" d="M560,578 H762 a8,8 0 0 0 8,-8 V544" marker-end="url(#aX)"/>
+  <text class="failt" x="578" y="569" font-size="12" font-weight="600">broker failed</text>
+  <line class="ln flow" x1="300" y1="604" x2="300" y2="628" marker-end="url(#aF)"/>
 
   <!-- done -->
-  <rect class="good" x="40" y="610" width="520" height="48" rx="8"/>
-  <text class="text" x="56" y="632" font-size="14" font-weight="600">Done: N+1 nodes, every node runs the same configuration</text>
-  <text class="muted" x="56" y="650" font-size="12">at any moment at most one node was restarting</text>
+  <rect class="good" x="40" y="628" width="520" height="48" rx="8"/>
+  <text class="text" x="56" y="653" font-size="14" font-weight="600">Done: N+1 nodes, every node runs the same configuration</text>
+  <text class="muted" x="56" y="670" font-size="12">at any moment at most one node was restarting</text>
 
   <!-- health check legend -->
-  <rect class="note" x="40" y="680" width="880" height="80" rx="8"/>
-  <text class="text" x="56" y="702" font-size="13" font-weight="600">Health check</text>
-  <text class="muted" x="56" y="722" font-size="12">ZooKeeper: zkServer.sh restart, then the PID file exists and that process is alive.</text>
-  <text class="muted" x="56" y="740" font-size="12">Kafka: after kafka-server-stop.sh wait for "shut down completed", after start wait for "started (kafka.server.KafkaServer)"</text>
-  <text class="muted" x="56" y="756" font-size="12">in server.log, the broker JVM is running and every partition has a leader with all live replicas in the ISR. Timeouts fail.</text>
+  <rect class="note" x="40" y="696" width="888" height="80" rx="8"/>
+  <text class="text" x="56" y="718" font-size="13" font-weight="600">Health check</text>
+  <text class="muted" x="56" y="738" font-size="12">ZooKeeper: zkServer.sh restart, then the PID file exists and that process is alive.</text>
+  <text class="muted" x="56" y="754" font-size="12">Kafka: after kafka-server-stop.sh wait for "shut down completed", after the start wait for "started (kafka.server.KafkaServer)" in server.log,</text>
+  <text class="muted" x="56" y="770" font-size="12">then the broker JVM must be running and every partition needs a leader with all live replicas in the ISR. A timeout counts as a failure.</text>
 </svg>
