@@ -45,8 +45,8 @@ Health checks:
 
 | Node | After a restart it counts as healthy when |
 | --- | --- |
-| ZooKeeper | `zkServer.sh restart` has written the PID file and that process is alive |
-| Kafka | `server.log` shows `shut down completed (kafka.server.KafkaServer)` after the stop, then `started (kafka.server.KafkaServer)` after the start (Kafka logs it once the broker is registered in ZooKeeper), the broker JVM is running, and every partition has a leader with all replicas on live brokers back in the ISR. Timeouts (90 s stop, 120 s start, 120 s sync) count as failures. |
+| ZooKeeper | `zkServer.sh restart` has written the PID file and that process is alive. Once the new server list is on every node, all nodes must answer `srvr` as leader, follower or standalone (90 s) |
+| Kafka | `server.log` shows `shut down completed (kafka.server.KafkaServer)` after the stop, its `/brokers/ids/<id>` registration is gone from ZooKeeper, then `started (kafka.server.KafkaServer)` after the start (Kafka logs it once the broker is registered in ZooKeeper), the broker JVM is running, and every partition has a leader with all replicas on live brokers back in the ISR. Timeouts (90 s stop, 120 s start, 120 s sync) count as failures. |
 
 Only log lines written after the command are looked at, so an old "started" line from a
 previous run cannot fool the check.
@@ -155,6 +155,9 @@ ZKM_SUBNET=10.10.10.0/24 ZKM_NETWORK=zkmesh ZKM_ZOOKEEPERS=3 ZKM_KAFKAS=2 ./init
 | `--kafkas N` | `ZKM_KAFKAS` | wanted Kafka brokers, 0 or more |
 | | `ZKM_ROOT_PASSWORD` | password set by `SetPass.sh` (default `root`) |
 | | `ZKM_KAFKA_STOP_TIMEOUT`, `ZKM_KAFKA_START_TIMEOUT`, `ZKM_KAFKA_SYNC_TIMEOUT` | Kafka health check timeouts in seconds (90 / 120 / 120) |
+| | `ZKM_ZK_TIMEOUT` | seconds to wait for a ZooKeeper node to serve requests (90) |
+| | `ZKM_KAFKA_SESSION_TIMEOUT` | seconds to wait for a stopped broker's registration to expire (60) |
+| | `ZKM_DOCKER_RUN_OPTS` | extra `docker run` options for new nodes, e.g. `--cpus=0.25` to act like a slow machine |
 
 ## Scripts
 
