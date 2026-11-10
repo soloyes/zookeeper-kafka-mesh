@@ -4,17 +4,18 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Grow and shrink a ZooKeeper ensemble and a Kafka cluster in Docker, one node at a time,
-without stopping the service. Plain bash and the docker CLI, no orchestrator.
+without stopping the service. Written in plain bash on top of the docker CLI; there is no
+orchestrator underneath.
 
-Adding a node means more than starting a container. Every ZooKeeper node has to learn the
+Starting a container is the easy part of adding a node. Every ZooKeeper node has to learn the
 new `server.N` line, every broker needs the new `zookeeper.connect`, and every process has to
 be restarted to pick up the change. If you restart them all at once you have an outage, and
 if one of them does not come back you are left with half the nodes on the new config. These
-scripts do it the careful way:
+scripts do it one node at a time:
 
 * the new node gets its id (`myid` / `broker.id`) and its configuration, and is started and
   checked first;
-* then the other nodes get the new configuration and are restarted **one by one**, each
+* then the other nodes get the new configuration and are restarted one by one, each
   health-checked before the next one is touched;
 * if any restart fails, every node changed so far gets its `.backup` configuration back and is
   restarted, and the new node is removed. The mesh ends up exactly as it was.
@@ -49,6 +50,49 @@ Health checks:
 
 Only log lines written after the command are looked at, so an old "started" line from a
 previous run cannot fool the check.
+
+## What it looks like
+
+Real output from a macOS laptop (colima, arm64), with the scripts executed inside a Linux
+`docker:cli` container the same way `tests/run-in-docker.sh` does it. Nothing was edited; the
+`srvr` picture comes from a second run with the same steps, so its container ids differ.
+
+Growing a fresh mesh to 3 ZooKeeper + 2 Kafka in one command. Each new node is checked first,
+then the older nodes of the same type are restarted one at a time:
+
+![init.sh --subnet 10.10.10.0/24 --network zkmesh --zookeepers 3 --kafkas 2](docs/screenshots/scale-up.png)
+
+The live cluster: the five containers and the state files, `srvr` on each ZooKeeper node (two
+followers and a leader), the brokers registered in ZooKeeper, and a topic with replication
+factor 2 whose partitions are spread over both brokers. A message produced on broker 1 is read
+on broker 2:
+
+![docker ps and the state files](docs/screenshots/docker-ps.png)
+
+![echo srvr | nc localhost 2181 on each ZooKeeper node](docs/screenshots/zk-srvr.png)
+
+![zookeeper-shell ls /brokers/ids, kafka-topics --create and --describe, produce and consume](docs/screenshots/kafka-topic.png)
+
+Shrinking to 2 + 1. The newest ZooKeeper is removed, the two that stay are restarted with the
+shorter `server.N` list, both brokers get the shorter `zookeeper.connect`, and then the newest
+broker is stopped with a controlled shutdown and removed. Afterwards every partition of the
+topic is led by broker 1:
+
+![init.sh --zookeepers 2 --kafkas 1](docs/screenshots/scale-down.png)
+
+![docker ps and kafka-topics --describe after the scale-down](docs/screenshots/after-scale-down.png)
+
+Growing back to 3 + 2. Adding a ZooKeeper node restarts the remaining broker with the longer
+`zookeeper.connect`; adding a broker restarts the other broker so it learns the new host:
+
+![init.sh --zookeepers 3 --kafkas 2 on the shrunk mesh](docs/screenshots/scale-up-again.png)
+
+The interactive menu on top of an existing mesh, every question answered with No, and
+`Clear.sh` at the end:
+
+![init.sh interactive menu](docs/screenshots/menu.png)
+
+![Clear.sh](docs/screenshots/clear.png)
 
 ## Quick start
 
@@ -155,20 +199,20 @@ GitHub Actions runs shellcheck and the end-to-end test on every push
 
 ## Limitations
 
-* **Linux only.** The scripts call `docker exec` into the nodes and never need to reach a node
+* Linux only. The scripts call `docker exec` into the nodes and never need to reach a node
   over the network from the host, but they are tested with Linux userland only. On macOS use
   `tests/run-in-docker.sh` or run `init.sh` the same way inside a Linux container.
-* **Not for production.** Nodes keep their data inside the container (no volumes), sshd is
+* Not for production. Nodes keep their data inside the container (no volumes), sshd is
   enabled with a root password, and there is no TLS or authentication anywhere.
-* **ZooKeeper membership is static.** Every change rewrites `zoo.cfg` and restarts the nodes;
+* ZooKeeper membership is static. Every change rewrites `zoo.cfg` and restarts the nodes;
   ZooKeeper's dynamic reconfiguration is not used. While the ensemble has only 1 or 2 nodes, a
   restart can cost the quorum for a few seconds (brokers reconnect on their own); from 3 nodes
   up one node restarting at a time leaves a majority running.
-* **Kafka in ZooKeeper mode.** Kafka 3.9 is the last line that supports ZooKeeper; Kafka 4 runs
+* Kafka runs in ZooKeeper mode. Kafka 3.9 is the last line that supports ZooKeeper; Kafka 4 runs
   KRaft only. Partitions are not moved when a broker is removed: topics need a replication
   factor above 1 to survive it, and the internal `__consumer_offsets` topic uses the default
   replication factor of 1.
-* **Removal has no rollback.** The removed node is already gone, so if a remaining node does not
+* Removal has no rollback. The removed node is already gone, so if a remaining node does not
   come back the scripts report it and leave it to you.
 * Nodes are removed newest first, which keeps the id counters consistent.
 * The health checks look at processes and logs, not at client traffic.
