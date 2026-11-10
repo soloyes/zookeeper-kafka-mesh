@@ -26,4 +26,6 @@ RUN wget -q "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCAL
  && tar xzf /tmp/kafka.tgz -C /home/kafka --strip-components 1 \
  && rm /tmp/kafka.tgz \
  && grep -q '^broker.id=0$' /home/kafka/config/server.properties \
- && grep -q '^zookeeper.connect=' /home/kafka/config/server.properties
+ && grep -q '^zookeeper.connect=' /home/kafka/config/server.properties \
+ && sed -i 's/^zookeeper.connection.timeout.ms=.*/zookeeper.connection.timeout.ms=60000/' /home/kafka/config/server.properties \
+ && grep -q '^zookeeper.connection.timeout.ms=60000$' /home/kafka/config/server.properties

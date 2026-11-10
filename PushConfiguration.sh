@@ -52,6 +52,17 @@ execute() {
         log INFO "$2 server $(node_ip "$i") restarted successfully"
     done
 
+    # Every ZooKeeper node now has the new server list: the ensemble must elect a leader
+    # and serve requests before anything else happens.
+    if [ "$2" = zookeeper ]; then
+        if ! wait_zk_ensemble; then
+            log ERROR "The zookeeper ensemble does not serve requests with the new node. Rolling back:"
+            rollback "${ChangedContainers[@]}"
+            exit 1
+        fi
+        log INFO "zookeeper ensemble is serving: $(zk_modes)"
+    fi
+
     # After a ZooKeeper node was added every Kafka broker needs the new zookeeper.connect.
     if [ "$2" = zookeeper ] && [ -s kafkaIP ]; then
         log INFO "Restarting kafka brokers with the new zookeeper.connect:"

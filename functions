@@ -166,8 +166,55 @@ wait_kafka_in_sync() {
     return 1
 }
 
+# Mode reported by "srvr" on ZooKeeper container $1: leader, follower or standalone.
+# Empty when the node is down or up but not serving (e.g. no quorum yet).
+zk_mode() {
+    docker exec "$1" bash -c "echo srvr | nc -w 2 localhost 2181" 2>/dev/null | sed -n 's/^Mode: //p'
+}
+
+# Wait until ZooKeeper on container $1 serves requests (has joined a quorum).
+# A live PID is not enough: right after a restart the process runs for a while
+# before the ensemble elects a leader, and clients connecting then get refused.
+# $1 - container id, $2 - timeout in seconds
+wait_zk_serving() {
+    local id=$1 timeout=${2:-${ZKM_ZK_TIMEOUT:-90}} waited=0
+    while [ "$waited" -lt "$timeout" ]; do
+        case "$(zk_mode "$id")" in
+            leader|follower|standalone) return 0 ;;
+        esac
+        sleep 1
+        waited=$((waited + 1))
+    done
+    return 1
+}
+
+# "ip=mode" for every ZooKeeper node, e.g. "10.10.10.2=follower 10.10.10.3=leader".
+zk_modes() {
+    local ip j out=""
+    while read -r ip j; do
+        [ -n "$j" ] || continue
+        out="$out $ip=$(zk_mode "$j")"
+    done <zookeeperIP
+    echo "${out# }"
+}
+
+# Wait until every ZooKeeper node in zookeeperIP serves requests. Brokers are restarted
+# only after that, so a broker never starts against an ensemble that is still electing.
+wait_zk_ensemble() {
+    local ip j
+    while read -r ip j; do
+        [ -n "$j" ] || continue
+        if ! wait_zk_serving "$j"; then
+            log ERROR "zookeeper $ip is not serving requests"
+            return 1
+        fi
+    done <zookeeperIP
+}
+
 # Health check of a node: 0 = healthy, 1 = not.
-#   zookeeper: PID file exists and that process is alive.
+#   zookeeper: PID file exists and that process is alive. While the server list is being
+#              rolled out a node can't serve yet (the others still have the old list), so
+#              "is the ensemble serving" is checked once at the end with wait_zk_ensemble.
 #   kafka:     broker JVM is running (RestartKafkaProcess.sh already waited for
 #              "started (kafka.server.KafkaServer)", which comes after the broker
 #              registered itself in ZooKeeper) and every partition is back in sync.
@@ -229,6 +276,7 @@ UpdateKafkaHosts() {
 
 # Back up, rewrite hosts + zookeeper.connect on broker $1 and restart it.
 PushKafka() {
+    wait_zk_ensemble || return 1
     docker exec "$1" cp -f /etc/hosts /etc/hosts.backup
     docker exec "$1" cp -f "$KAFKA_CFG" "$KAFKA_CFG.backup"
     UpdateKafkaHosts "$1"

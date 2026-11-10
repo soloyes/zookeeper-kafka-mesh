@@ -57,6 +57,15 @@ for i in $(awk '{print $2}' "$1IP"); do
     fi
 done
 
+# The remaining ZooKeeper nodes must form a quorum and serve before brokers restart.
+if [ "$1" = zookeeper ]; then
+    if wait_zk_ensemble; then
+        log INFO "zookeeper ensemble is serving: $(zk_modes)"
+    else
+        failed=1
+    fi
+fi
+
 # The ZooKeeper list changed: every Kafka broker needs the new zookeeper.connect.
 if [ "$1" = zookeeper ] && [ -s kafkaIP ]; then
     for i in $(awk '{print $2}' kafkaIP); do
