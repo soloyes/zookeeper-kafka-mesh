@@ -15,7 +15,9 @@ if [[ "$1" != kafka && "$1" != zookeeper ]]; then
 fi
 
 # --rm: a node that is stopped (deleted or rolled back) leaves nothing behind.
-if ! ID=$(docker run --rm --net "$(net_name)" -itd "baseimage-$1" /sbin/my_init -- bash -l); then
+# Extra "docker run" options, e.g. ZKM_DOCKER_RUN_OPTS="--cpus=0.5" to simulate a slow machine.
+read -r -a run_opts <<<"${ZKM_DOCKER_RUN_OPTS:-}"
+if ! ID=$(docker run --rm --net "$(net_name)" "${run_opts[@]}" -itd "baseimage-$1" /sbin/my_init -- bash -l); then
     log ERROR "Could not start a baseimage-$1 container. Did you build the images?"
     exit 2
 fi

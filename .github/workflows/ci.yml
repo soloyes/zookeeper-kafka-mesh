@@ -17,7 +17,15 @@ jobs:
   e2e:
     needs: shellcheck
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [normal, slow]
+    name: e2e (${{ matrix.profile }})
+    env:
+      # "slow": every container gets half a CPU, like a busy laptop or a small VM.
+      ZKM_DOCKER_RUN_OPTS: ${{ matrix.profile == 'slow' && '--cpus=0.5' || '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Build images
