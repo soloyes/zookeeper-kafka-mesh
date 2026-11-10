@@ -1,42 +1,37 @@
-#!/bin/bash
-. ./functions
-#Check, whether we have any ran zookeeper or kafka containers.
+#!/usr/bin/env bash
+# Look at the running zookeeper/kafka containers of the mesh, rebuild the state
+# files from them and ask whether to create more / delete one.
+# Exit code: 0 = go on (create/delete), 1 = skip.
 # $1 - Container type (zookeeper/kafka)
 # $2 - create/delete
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
+. ./functions
 
-######
-if [[ "$1" != kafka && "$1" != zookeeper ]]; then
-	log ERROR "Usage: $0 (zookeeper/kafka) (create/delete)"
-	exit 1;
-fi;
+if [[ "$1" != kafka && "$1" != zookeeper ]] || [[ "$2" != create && "$2" != delete ]]; then
+    log ERROR "Usage: $0 (zookeeper/kafka) (create/delete)"
+    exit 1
+fi
 
-if [[ "$2" != create && "$2" != delete ]]; then
-	log ERROR "Usage: $0 (zookeeper/kafka) (create/delete)"
-	exit 1;
-fi;
-######
+# Rebuild $1IP and the id counter from what is really running: containers may
+# have been stopped by hand since the last run.
+refresh_state "$1"
+Containers=$(grep -c . "$1IP")
 
-Containers=$(docker ps | grep baseimage-$1 | wc -l);
-if [[ $Containers -eq 0 && "$1" == kafka ]]; then
-	log WARN "There are no any $1, create?";
-    selectYN;
+if is_noninteractive; then
+    exit 0
+fi
 
-elif [[ $Containers -eq 0 && "$1" = zookeeper ]]; then
-    #Must exist at least one zookeeper.
-	log INFO "There are no any $1. Creating..." #Here go to init.sh -> CreateContainer.sh zookeeper
+if [ "$Containers" -eq 0 ] && [ "$2" = delete ]; then
+    exit 1
+elif [ "$Containers" -eq 0 ] && [ "$1" = kafka ]; then
+    log WARN "There are no $1 nodes, create?"
+    selectYN
+elif [ "$Containers" -eq 0 ] && [ "$1" = zookeeper ]; then
+    # At least one zookeeper must exist: init.sh goes on to CreateContainer.sh zookeeper.
+    log INFO "There are no $1 nodes. Creating..."
+    exit 0
 else
-	docker ps | grep baseimage-$1;
-	log WARN "There are exist $1 containers above, $([ "$2" = create ] && echo 'create more?' || echo 'delete?')";
-
-	#Check all IP's and re-create IP file.
-	#When we will add new nodes, we will add strings to file.
-	#When check again from init.sh, we analyse all nodes from the begin.
-	#It is better to prevent any addition controls because there could be IP's in non-sequence.
-	rm $1IP;
-	for i in $(docker ps | grep $1 | awk '{print $1}'); do
-		#Get big ID from short ID. Then get IP from big ID and NetName
-		echo $(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $i)\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//') $i >> $1IP;
-	done;
-    selectYN;
-fi;
-unset Containers;
+    docker ps --filter "network=$(net_name)" --filter "ancestor=baseimage-$1"
+    log WARN "There are $Containers $1 nodes above, $([ "$2" = create ] && echo 'create more?' || echo 'delete one?')"
+    selectYN
+fi

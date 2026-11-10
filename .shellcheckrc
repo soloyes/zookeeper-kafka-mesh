@@ -1,0 +1,6 @@
+shell=bash
+external-sources=true
+source-path=SCRIPTDIR
+# Loops over container ids printed by awk (one word per line) are deliberate:
+# "while read" would hand its stdin to the "docker exec -i" calls inside the loop.
+disable=SC2013

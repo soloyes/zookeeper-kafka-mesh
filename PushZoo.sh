@@ -1,27 +1,13 @@
-#!/bin/bash
-. ./functions
-#Push zoo IDs to zoo containers
+#!/usr/bin/env bash
+# Rewrite the zoo.cfg server list on one ZooKeeper container and restart it.
 # $1 - Container ID
-# $2 - Container type (zookeeper/kafka)
+# $2 - Container type (zookeeper)
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
+. ./functions
 
-######
-if [[ "$2" != kafka && "$2" != zookeeper ]]; then
-	log ERROR "Usage: $0 ContainerID (zookeeper/kafka)";
-	exit 1;
-fi;
+if [[ -z "$1" || "$2" != zookeeper ]]; then
+    log ERROR "Usage: $0 ContainerID zookeeper"
+    exit 1
+fi
 
-if [[ "$1" == "" ]]; then
-	log ERROR "Usage: $0 ContainerID (zookeeper/kafka)";
-	exit 1;
-fi;
-######
-
-######
-docker exec $1 /bin/bash -c "cp -f /etc/zookeeper/conf/zoo.cfg /etc/zookeeper/conf/zoo.cfg.backup";
-docker exec $1 /bin/bash -c "cp -f /etc/zookeeper/conf/zoo.cfg.infobip /etc/zookeeper/conf/zoo.cfg";
-#Add all servers to zoo.cfg
-for j in $(cat $2IP | awk '{print $2}'); do
-	docker exec $1 /bin/bash -c "echo "server.$(docker exec $j /bin/bash -c "cat /etc/zookeeper/conf/myid")=$(docker network inspect --format "{{ index .Containers \"$(docker inspect --format "{{ .Id }}" $j)\" }}" $(cat NetName) | awk '{print $4}' | sed 's/\/.*//'):2888:3888" >> /etc/zookeeper/conf/zoo.cfg";
-done;
-log INFO "Restart $2 process on container $(docker exec $1 /bin/bash -c "cat /etc/hosts | grep $1" | awk '{print $1}')";
-docker exec $1 /usr/share/zookeeper/bin/zkServer.sh restart 1>/dev/null 2>/dev/null;
+PushZoo "$1"

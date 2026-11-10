@@ -1,0 +1,6 @@
+# State files written by the scripts
+NetName
+*IP
+*IP.tmp
+*_myid
+log.log

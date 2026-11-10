@@ -1,27 +1,28 @@
-#!/bin/bash
-#Delete all containers and network
+#!/usr/bin/env bash
+# Tear the mesh down: remove every container on our network, the network and the state files.
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 . ./functions
 
-log STARS;
-log WARN "Clear all configuration with Clear.sh";
+log STARS
+log WARN "Clear all configuration with Clear.sh"
 
-if [ -e NetName ]; then
-	j=0;
-	for i in $(docker ps -q); do 
-		docker inspect $i | grep "$(cat NetName)" 1>/dev/null 2>/dev/null;
-		if [ $? -eq 0 ]; then
-			NetNameContainers[$j]=$i;
-		fi;
-		((j++));
-	done;
-	for i in ${NetNameContainers[@]}; do 
-		docker stop $i 1>/dev/null 2>/dev/null;
-	done;
-	docker network rm $(cat NetName) 1>/dev/null;
-	[ $? -eq 0 ]; rm NetName; [ $? -eq 0 ]; rm *IP; rm *myid;
+if [ -f NetName ]; then
+    NET=$(net_name)
+    containers=$(docker ps -aq --filter "network=$NET")
+    if [ -n "$containers" ]; then
+        # shellcheck disable=SC2086 # one id per word
+        docker rm -f $containers >/dev/null
+        log INFO "Removed containers: $(echo "$containers" | tr '\n' ' ')"
+    fi
+    if docker network rm "$NET" >/dev/null; then
+        log INFO "Removed network $NET"
+    else
+        log ERROR "Could not remove network $NET"
+    fi
+    rm -f NetName zookeeperIP kafkaIP zookeeper_myid kafka_myid
 else
-	log ERROR "There is no network, please create it using init.sh";
-fi;
+    log ERROR "There is no network, please create it using init.sh"
+fi
 
-log STARS;
-log INFO "Exit Clear.sh";
+log STARS
+log INFO "Exit Clear.sh"
