@@ -24,8 +24,8 @@ jobs:
         profile: [normal, slow]
     name: e2e (${{ matrix.profile }})
     env:
-      # "slow": every container gets half a CPU, like a busy laptop or a small VM.
-      ZKM_DOCKER_RUN_OPTS: ${{ matrix.profile == 'slow' && '--cpus=0.5' || '' }}
+      # "slow": every container gets a quarter of a CPU, like a busy laptop or a small VM.
+      ZKM_DOCKER_RUN_OPTS: ${{ matrix.profile == 'slow' && '--cpus=0.25' || '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Build images
