@@ -231,6 +231,26 @@ Check() {
     fi
 }
 
+# Wait until the registration of broker $1 (/brokers/ids/<broker.id>) is gone from ZooKeeper.
+# A broker that stopped while the ensemble was electing could not close its session, so its
+# ephemeral znode lives on until the session times out; a new broker process started before
+# that exits at once with NodeExistsException. Read-only check through zookeeper-shell.
+# $1 - container id, $2 - timeout in seconds
+wait_broker_unregistered() {
+    local id=$1 timeout=${2:-${ZKM_KAFKA_SESSION_TIMEOUT:-60}} waited=0 bid conn
+    bid=$(docker exec "$id" sed -n 's/^broker.id=//p' "$KAFKA_CFG")
+    conn=$(docker exec "$id" sed -n 's/^zookeeper.connect=//p' "$KAFKA_CFG")
+    while [ "$waited" -lt "$timeout" ]; do
+        if docker exec "$id" "$KAFKA_HOME/bin/zookeeper-shell.sh" "$conn" stat "/brokers/ids/$bid" 2>&1 |
+            grep -q 'Node does not exist'; then
+            return 0
+        fi
+        sleep 2
+        waited=$((waited + 2))
+    done
+    return 1
+}
+
 # Controlled shutdown of the broker on container $1: Kafka moves partition leadership
 # to the other in-sync replicas before it exits. Waits for the shutdown log line.
 stop_kafka() {

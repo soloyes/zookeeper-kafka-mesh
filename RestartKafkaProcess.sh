@@ -3,7 +3,8 @@
 # $1 - Container ID
 # $2 - Container type (kafka)
 #
-# Stop:  kafka-server-stop.sh, then wait for "shut down completed (kafka.server.KafkaServer)".
+# Stop:  kafka-server-stop.sh, then wait for "shut down completed (kafka.server.KafkaServer)",
+#        then wait until its /brokers/ids/<id> registration is gone from ZooKeeper.
 # Start: kafka-server-start.sh -daemon, then wait for "started (kafka.server.KafkaServer)",
 #        which Kafka logs only after the broker has registered itself in ZooKeeper.
 # Only log lines written after the command are taken into account.
@@ -30,6 +31,11 @@ if kafka_running "$1"; then
         kafka_running "$1" || break
         sleep 1
     done
+fi
+
+# The old registration must be gone, otherwise the new process exits with NodeExistsException.
+if ! wait_broker_unregistered "$1"; then
+    log WARN "Broker on $(node_ip "$1") is still registered in ZooKeeper, starting anyway"
 fi
 
 from=$(kafka_log_lines "$1")
