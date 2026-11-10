@@ -1,14 +1,24 @@
-FROM phusion/baseimage
-RUN sed -i 's/#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
+# ZooKeeper node image: phusion/baseimage (runit + sshd) + Ubuntu's zookeeper package.
+# Ubuntu 24.04 ships ZooKeeper 3.9.1 (it pulls in default-jre, OpenJDK 21).
+# The scripts rely on this Debian layout:
+#   /etc/zookeeper/conf/zoo.cfg, /etc/zookeeper/conf/myid,
+#   /usr/share/zookeeper/bin/zkServer.sh, /var/lib/zookeeper/zookeeper_server.pid
+FROM phusion/baseimage:noble-1.0.3
 
-RUN rm -f /etc/service/sshd/down
+# Small heap so a 3-node ensemble fits on a laptop or a CI runner.
+ENV SERVER_JVMFLAGS="-Xmx128m -Xms64m"
 
-# Regenerate SSH host keys. baseimage-docker does not contain any, so you
-# have to do that yourself. You may also comment out this instruction; the
-# init system will auto-generate one during boot.
-RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
+RUN sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
+ && rm -f /etc/service/sshd/down \
+ && /etc/my_init.d/00_regen_ssh_host_keys.sh
 
-RUN apt-get update && \
-        apt-get install -y default-jre --no-install-recommends && \
-        apt-get install -y zookeeper --no-install-recommends
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends zookeeper netcat-openbsd \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
+# The 3.9 package defaults to dataDir=/tmp/zookeeper. Point it back at /var/lib/zookeeper,
+# where /var/lib/zookeeper/myid is a symlink to /etc/zookeeper/conf/myid.
+RUN sed -i 's|^dataDir=.*|dataDir=/var/lib/zookeeper|' /etc/zookeeper/conf/zoo.cfg \
+ && grep -q '^dataDir=/var/lib/zookeeper$' /etc/zookeeper/conf/zoo.cfg \
+ && grep -q '^clientPort=2181$' /etc/zookeeper/conf/zoo.cfg

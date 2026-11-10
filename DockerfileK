@@ -1,17 +1,29 @@
-FROM phusion/baseimage
-RUN sed -i 's/#PermitRootLogin/PermitRootLogin/' /etc/ssh/sshd_config
+# Kafka node image: phusion/baseimage (runit + sshd) + Apache Kafka 3.9.1 in ZooKeeper mode.
+# 3.9.x is the last Kafka line that still runs brokers on ZooKeeper; it bundles the
+# ZooKeeper 3.8 client, which talks to the 3.9 ensemble from DockerfileZ.
+FROM phusion/baseimage:noble-1.0.3
 
-RUN rm -f /etc/service/sshd/down
+ARG KAFKA_VERSION=3.9.1
+ARG SCALA_VERSION=2.13
+# sha512 of kafka_2.13-3.9.1.tgz, from archive.apache.org
+ARG KAFKA_SHA512=1ea204ba73411737a275429ca976d440f007ff0957b90b19be41dc5a4bae52617267769be9f0b5791714d0b3c4c760605bd426faea39edd90763585523fa2cfe
 
-# Regenerate SSH host keys. baseimage-docker does not contain any, so you
-# have to do that yourself. You may also comment out this instruction; the
-# init system will auto-generate one during boot.
-RUN /etc/my_init.d/00_regen_ssh_host_keys.sh
+# Small heap so two brokers fit next to the ensemble on a laptop or a CI runner.
+ENV KAFKA_HEAP_OPTS="-Xmx384M -Xms256M"
 
-RUN apt-get update && \
-        apt-get install -y default-jre --no-install-recommends && \
-        apt-get install -y wget --no-install-recommends
-RUN wget "http://mirror.cc.columbia.edu/pub/software/apache/kafka/0.8.2.1/kafka_2.11-0.8.2.1.tgz" -P /home
-RUN mkdir -p /home/kafka
-RUN tar zxvf /home/kafka_2.11-0.8.2.1.tgz -C /home/kafka --strip 1
-RUN rm /home/kafka_2.11-0.8.2.1.tgz
+RUN sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
+ && rm -f /etc/service/sshd/down \
+ && /etc/my_init.d/00_regen_ssh_host_keys.sh
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openjdk-17-jre-headless wget ca-certificates \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN wget -q "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" -O /tmp/kafka.tgz \
+ && echo "${KAFKA_SHA512}  /tmp/kafka.tgz" | sha512sum -c - \
+ && mkdir -p /home/kafka \
+ && tar xzf /tmp/kafka.tgz -C /home/kafka --strip-components 1 \
+ && rm /tmp/kafka.tgz \
+ && grep -q '^broker.id=0$' /home/kafka/config/server.properties \
+ && grep -q '^zookeeper.connect=' /home/kafka/config/server.properties
